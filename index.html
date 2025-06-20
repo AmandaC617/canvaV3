@@ -40,11 +40,26 @@
           <input type="password" id="google-api-key" class="w-full p-2 border border-gray-300 rounded-md" placeholder="請輸入你的 Google API Key">
         </div>
         <div class="mb-2">
+          <label for="google-cx-id" class="block text-sm font-medium text-gray-700 mb-1">Google 搜尋引擎 ID (CX)</label>
+          <input type="text" id="google-cx-id" class="w-full p-2 border border-gray-300 rounded-md" placeholder="請輸入你的 Google Custom Search ID (CX)">
+        </div>
+        <div class="mb-2">
           <label for="ai-api-key" class="block text-sm font-medium text-gray-700 mb-1">AI API Key (Gemini/Monica)</label>
           <input type="password" id="ai-api-key" class="w-full p-2 border border-gray-300 rounded-md" placeholder="請輸入你的 AI API Key">
         </div>
         <button id="save-settings" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">儲存設定</button>
         <button id="clear-settings" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition ml-2">清除 API Key</button>
+    </div>
+    <div class="mb-6 p-4 bg-white rounded-lg shadow">
+        <h2 class="font-bold mb-2">自訂存檔設定</h2>
+        <div class="mb-2">
+            <label for="custom-folder-name" class="block text-sm font-medium text-gray-700 mb-1">Google Drive 資料夾名稱</label>
+            <input type="text" id="custom-folder-name" class="w-full p-2 border border-gray-300 rounded-md" placeholder="預設：MarketIntel_Reports">
+        </div>
+        <div class="mb-2">
+            <label for="custom-file-name" class="block text-sm font-medium text-gray-700 mb-1">自訂檔案名稱（可用變數：<code>{prompt}</code>, <code>{date}</code>）</label>
+            <input type="text" id="custom-file-name" class="w-full p-2 border border-gray-300 rounded-md" placeholder="範例：{prompt}_{date}">
+        </div>
     </div>
     <div id="app-container" class="locked">
         <div class="mb-4">
@@ -78,87 +93,217 @@
 </main>
 
 <script>
-/* === 請填入你自己的 Google OAuth Client ID === */
 const GOOGLE_CLIENT_ID = '733619441496-5gigdpkv42k84no3q5vvh93ths1e8u29.apps.googleusercontent.com';
-const DRIVE_FOLDER_NAME = 'MarketIntel_Reports';
 const GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 const MONICA_API_ENDPOINT = "https://api.monica.im/v1/chat/completions";
 
 let lastAIResult = null;
+let googleUser = null;
+let googleAuthInstance = null;
+let googleInited = false;
+let customFolderName = "";
+let customFileNamePattern = "";
 
-/* 工具函式 */
 function showLoading(msg) {
     document.getElementById('loading-message').textContent = msg || '處理中...';
     document.getElementById('loading-overlay').classList.remove('hidden');
 }
-function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
-}
-function showAlert(msg) {
-    alert(msg);
-}
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
+function showAlert(msg) { alert(msg); }
 
-/* 儲存與載入 API Key (localStorage) */
 function loadApiKeys() {
-    if (localStorage.getItem('googleApiKey')) {
-      document.getElementById('google-api-key').value = localStorage.getItem('googleApiKey');
-    }
-    if (localStorage.getItem('aiApiKey')) {
-      document.getElementById('ai-api-key').value = localStorage.getItem('aiApiKey');
-    }
+    if (localStorage.getItem('googleApiKey')) document.getElementById('google-api-key').value = localStorage.getItem('googleApiKey');
+    if (localStorage.getItem('aiApiKey')) document.getElementById('ai-api-key').value = localStorage.getItem('aiApiKey');
+    if (localStorage.getItem('googleCxId')) document.getElementById('google-cx-id').value = localStorage.getItem('googleCxId');
+    if (localStorage.getItem('customFolderName')) document.getElementById('custom-folder-name').value = localStorage.getItem('customFolderName');
+    if (localStorage.getItem('customFileName')) document.getElementById('custom-file-name').value = localStorage.getItem('customFileName');
 }
 function saveApiKeys() {
     const googleApiKey = document.getElementById('google-api-key').value.trim();
     const aiApiKey = document.getElementById('ai-api-key').value.trim();
+    const googleCxId = document.getElementById('google-cx-id').value.trim();
+    const folderName = document.getElementById('custom-folder-name').value.trim();
+    const fileName = document.getElementById('custom-file-name').value.trim();
     if (!googleApiKey) { alert('請輸入 Google API Key'); return; }
+    if (!googleCxId) { alert('請輸入 Google 搜尋引擎 ID (CX)'); return; }
     localStorage.setItem('googleApiKey', googleApiKey);
     localStorage.setItem('aiApiKey', aiApiKey);
-    alert('API Key 已儲存（僅儲存在本機瀏覽器）');
+    localStorage.setItem('googleCxId', googleCxId);
+    localStorage.setItem('customFolderName', folderName);
+    localStorage.setItem('customFileName', fileName);
+    alert('API Key 與存檔設定已儲存（僅儲存在本機瀏覽器）');
 }
 function clearApiKeys() {
     localStorage.removeItem('googleApiKey');
     localStorage.removeItem('aiApiKey');
+    localStorage.removeItem('googleCxId');
+    localStorage.removeItem('customFolderName');
+    localStorage.removeItem('customFileName');
     document.getElementById('google-api-key').value = '';
     document.getElementById('ai-api-key').value = '';
-    alert('API Key 已清除');
+    document.getElementById('google-cx-id').value = '';
+    document.getElementById('custom-folder-name').value = '';
+    document.getElementById('custom-file-name').value = '';
+    alert('API Key 與存檔設定已清除');
+    document.getElementById('app-container').classList.add('locked');
 }
 
-/* Google 登入 */
-function initGoogleAPI() {
-    const googleApiKey = localStorage.getItem('googleApiKey');
-    if (!googleApiKey) {
-      showAlert("請先輸入並儲存 Google API Key");
-      return;
-    }
-    gapi.load('client:auth2', () => {
-        gapi.client.init({
-            apiKey: googleApiKey,
-            clientId: GOOGLE_CLIENT_ID,
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+/* Google 登入（只做 Auth2，無需 API key） */
+function initGoogleAuth() {
+    gapi.load('auth2', () => {
+        gapi.auth2.init({
+            client_id: GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile'
         }).then(() => {
-            gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-            updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-            document.getElementById('authorize_button').onclick = () => gapi.auth2.getAuthInstance().signIn();
-            document.getElementById('signout_button').onclick = () => gapi.auth2.getAuthInstance().signOut();
-        }).catch(err => showAlert("Google API 初始化失敗: " + err.error));
+            googleAuthInstance = gapi.auth2.getAuthInstance();
+            updateSigninStatus(googleAuthInstance.isSignedIn.get());
+            document.getElementById('authorize_button').onclick = () => googleAuthInstance.signIn();
+            document.getElementById('signout_button').onclick = () => googleAuthInstance.signOut();
+            googleAuthInstance.isSignedIn.listen(updateSigninStatus);
+        });
     });
 }
+
 function updateSigninStatus(isSignedIn) {
     if (isSignedIn) {
+        googleUser = googleAuthInstance.currentUser.get();
+        const profile = googleUser.getBasicProfile();
         document.getElementById('authorize_button').classList.add('hidden');
-        let user = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile();
         document.getElementById('user-profile').classList.remove('hidden');
         document.getElementById('user-profile').classList.add('flex');
-        document.getElementById('user-avatar').src = user.getImageUrl();
-        document.getElementById('user-name').textContent = user.getName();
-        document.getElementById('app-container').classList.remove('locked');
-        loadDriveHistoryList();
+        document.getElementById('user-avatar').src = profile.getImageUrl();
+        document.getElementById('user-name').textContent = profile.getName();
+        checkAndInitGoogleAPI();
     } else {
+        googleUser = null;
         document.getElementById('authorize_button').classList.remove('hidden');
         document.getElementById('user-profile').classList.add('hidden');
         document.getElementById('user-profile').classList.remove('flex');
         document.getElementById('app-container').classList.add('locked');
+    }
+}
+
+/* 登入+API Key齊全才初始化 gapi.client */
+async function checkAndInitGoogleAPI() {
+    const googleApiKey = localStorage.getItem('googleApiKey');
+    const googleCxId = localStorage.getItem('googleCxId');
+    customFolderName = localStorage.getItem('customFolderName') || "MarketIntel_Reports";
+    customFileNamePattern = localStorage.getItem('customFileName') || "{prompt}_{date}";
+    if (googleUser && googleApiKey && googleCxId) {
+        if (!googleInited) {
+            try {
+                showLoading("初始化 Google API...");
+                await gapi.client.init({
+                    apiKey: googleApiKey,
+                    clientId: GOOGLE_CLIENT_ID,
+                    discoveryDocs: [
+                        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                        'https://www.googleapis.com/discovery/v1/apis/customsearch/v1/rest'
+                    ],
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile'
+                });
+                googleInited = true;
+                document.getElementById('app-container').classList.remove('locked');
+                loadDriveHistoryList();
+                hideLoading();
+            } catch (err) {
+                hideLoading();
+                showAlert("Google API 初始化失敗: " + (err.error || err.message));
+                document.getElementById('app-container').classList.add('locked');
+            }
+        } else {
+            document.getElementById('app-container').classList.remove('locked');
+            loadDriveHistoryList();
+        }
+    } else {
+        document.getElementById('app-container').classList.add('locked');
+    }
+}
+
+/* 格式化檔案名稱 */
+function formatFileName(prompt) {
+    let date = new Date();
+    // yyyyMMdd_HHmm
+    let dateStr = date.getFullYear().toString() +
+        ('0'+(date.getMonth()+1)).slice(-2) +
+        ('0'+date.getDate()).slice(-2) + "_" +
+        ('0'+date.getHours()).slice(-2) +
+        ('0'+date.getMinutes()).slice(-2);
+    let safePrompt = (prompt || "分析報告").replace(/[\\/:*?"<>|]/g, "_").slice(0, 30);
+    let pattern = customFileNamePattern || "{prompt}_{date}";
+    return pattern.replace("{prompt}", safePrompt).replace("{date}", dateStr) + ".json";
+}
+
+/* Google Drive 資料夾管理 */
+async function getOrCreateFolderId() {
+    // 支援自訂資料夾名稱
+    const folderName = customFolderName || "MarketIntel_Reports";
+    let res = await gapi.client.drive.files.list({
+        q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
+        fields: "files(id)"
+    });
+    if (res.result.files.length > 0) return res.result.files[0].id;
+    let createRes = await gapi.client.drive.files.create({
+        resource: { name: folderName, mimeType: "application/vnd.google-apps.folder" },
+        fields: "id"
+    });
+    return createRes.result.id;
+}
+
+/* 儲存分析結果（自訂檔名） */
+async function saveReportToDrive(reportObj, prompt) {
+    const folderId = await getOrCreateFolderId();
+    const boundary = "foo_bar_baz";
+    const fileName = formatFileName(prompt);
+    const metadata = {
+        name: fileName,
+        mimeType: "application/json",
+        parents: [folderId]
+    };
+    const multipartRequestBody =
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(reportObj)}\r\n--${boundary}--`;
+
+    await gapi.client.request({
+        path: '/upload/drive/v3/files',
+        method: 'POST',
+        params: { uploadType: 'multipart' },
+        headers: { 'Content-Type': `multipart/related; boundary="${boundary}"` },
+        body: multipartRequestBody
+    });
+    showAlert('報告已儲存到 Google Drive！');
+    loadDriveHistoryList();
+}
+
+/* 歷史紀錄列表 */
+async function loadDriveHistoryList() {
+    if (!googleInited) return;
+    const folderId = await getOrCreateFolderId();
+    const res = await gapi.client.drive.files.list({
+        q: `'${folderId}' in parents and trashed=false and mimeType='application/json'`,
+        fields: 'files(id, name, createdTime)',
+        orderBy: 'createdTime desc'
+    });
+    const list = document.getElementById('history-list');
+    list.innerHTML = "";
+    if (res.result.files.length === 0) {
+        list.innerHTML = '<div class="text-gray-500 text-center py-4">尚無歷史紀錄</div>';
+    } else {
+        res.result.files.forEach(file => {
+            const item = document.createElement('div');
+            item.className = 'flex justify-between items-center p-2 border-b';
+            item.innerHTML = `<span>${file.name.replace('.json', '')}</span>
+                <button class="load-history bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs" data-id="${file.id}">載入</button>`;
+            item.querySelector('.load-history').onclick = async function() {
+                showLoading('載入紀錄中...');
+                const fileId = this.dataset.id;
+                const resp = await gapi.client.drive.files.get({fileId, alt:'media'});
+                hideLoading();
+                document.getElementById('analysis-result').textContent = resp.result.result || JSON.stringify(resp.result).slice(0,500);
+                lastAIResult = resp.result;
+            };
+            list.appendChild(item);
+        });
     }
 }
 
@@ -193,91 +338,26 @@ async function callAI(prompt, provider, model, apiKey) {
     throw new Error("目前尚不支援此 AI 來源");
 }
 
-/* Google Drive 資料夾管理 */
-async function getOrCreateFolderId() {
-    let res = await gapi.client.drive.files.list({
-        q: `mimeType='application/vnd.google-apps.folder' and name='${DRIVE_FOLDER_NAME}' and trashed=false`,
-        fields: "files(id)"
-    });
-    if (res.result.files.length > 0) return res.result.files[0].id;
-    let createRes = await gapi.client.drive.files.create({
-        resource: { name: DRIVE_FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" },
-        fields: "id"
-    });
-    return createRes.result.id;
-}
-
-/* 儲存分析結果 */
-async function saveReportToDrive(reportObj) {
-    const folderId = await getOrCreateFolderId();
-    const boundary = "foo_bar_baz";
-    const metadata = {
-        name: `report_${new Date().toISOString().replace(/:/g,"-")}.json`,
-        mimeType: "application/json",
-        parents: [folderId]
-    };
-    const multipartRequestBody =
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(reportObj)}\r\n--${boundary}--`;
-
-    await gapi.client.request({
-        path: '/upload/drive/v3/files',
-        method: 'POST',
-        params: { uploadType: 'multipart' },
-        headers: { 'Content-Type': `multipart/related; boundary="${boundary}"` },
-        body: multipartRequestBody
-    });
-    showAlert('報告已儲存到 Google Drive！');
-    loadDriveHistoryList();
-}
-
-/* 歷史紀錄列表 */
-async function loadDriveHistoryList() {
-    const folderId = await getOrCreateFolderId();
-    const res = await gapi.client.drive.files.list({
-        q: `'${folderId}' in parents and trashed=false and mimeType='application/json'`,
-        fields: 'files(id, name, createdTime)',
-        orderBy: 'createdTime desc'
-    });
-    const list = document.getElementById('history-list');
-    list.innerHTML = "";
-    if (res.result.files.length === 0) {
-        list.innerHTML = '<div class="text-gray-500 text-center py-4">尚無歷史紀錄</div>';
-    } else {
-        res.result.files.forEach(file => {
-            const item = document.createElement('div');
-            item.className = 'flex justify-between items-center p-2 border-b';
-            item.innerHTML = `<span>${file.name.replace('.json', '')}</span>
-                <button class="load-history bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs" data-id="${file.id}">載入</button>`;
-            item.querySelector('.load-history').onclick = async function() {
-                showLoading('載入紀錄中...');
-                const fileId = this.dataset.id;
-                const resp = await gapi.client.drive.files.get({fileId, alt:'media'});
-                hideLoading();
-                document.getElementById('analysis-result').textContent = resp.result.result || JSON.stringify(resp.result).slice(0,500);
-                lastAIResult = resp.result;
-            };
-            list.appendChild(item);
-        });
-    }
-}
-
 /* 主事件流程 */
 document.addEventListener('DOMContentLoaded', function() {
-    // API Key 設定管理
     loadApiKeys();
-    document.getElementById('save-settings').onclick = function() {
-      saveApiKeys();
-      initGoogleAPI(); // 儲存後自動重啟 Google API 初始化
+    customFolderName = localStorage.getItem('customFolderName') || "MarketIntel_Reports";
+    customFileNamePattern = localStorage.getItem('customFileName') || "{prompt}_{date}";
+
+    document.getElementById('save-settings').onclick = async function() {
+        saveApiKeys();
+        customFolderName = document.getElementById('custom-folder-name').value.trim() || "MarketIntel_Reports";
+        customFileNamePattern = document.getElementById('custom-file-name').value.trim() || "{prompt}_{date}";
+        googleInited = false; // 強制重新初始化 gapi.client
+        await checkAndInitGoogleAPI();
     };
     document.getElementById('clear-settings').onclick = function() {
-      clearApiKeys();
-      // 鎖定功能直到重新設定
-      document.getElementById('app-container').classList.add('locked');
+        clearApiKeys();
+        googleInited = false;
     };
 
-    // Google 登入初始化（如果 API Key 已設定）
-    if (localStorage.getItem('googleApiKey')) initGoogleAPI();
+    // Google 登入初始化（只做 Auth）
+    initGoogleAuth();
 
     document.getElementById('run-analysis').onclick = async function() {
         const prompt = document.getElementById('analysis-prompt').value;
@@ -293,7 +373,13 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const result = await callAI(prompt, provider, model, aiKey);
             document.getElementById('analysis-result').textContent = result;
-            lastAIResult = {prompt, result, provider, model, time: new Date().toISOString()};
+            lastAIResult = {
+                prompt,
+                result,
+                provider,
+                model,
+                time: new Date().toISOString()
+            };
         } catch(e) {
             document.getElementById('analysis-result').textContent = "AI 呼叫失敗: " + e.message;
             lastAIResult = null;
@@ -302,10 +388,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     document.getElementById('save-analysis').onclick = async function() {
+        const prompt = document.getElementById('analysis-prompt').value;
         if (!lastAIResult) { showAlert("請先執行分析！"); return; }
         showLoading("儲存至 Google Drive...");
         try {
-            await saveReportToDrive(lastAIResult);
+            await saveReportToDrive(lastAIResult, prompt);
         } catch(e) {
             showAlert("儲存失敗: " + e.message);
         }
