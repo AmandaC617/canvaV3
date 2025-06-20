@@ -5,7 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>市場情資與競品分析平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
+    <!-- 1. gapi 載入旗標與 onload 事件 -->
+    <script>
+    window.gapiLoaded = false;
+    function onGapiLoaded() {
+        window.gapiLoaded = true;
+    }
+    // 等待 gapi 載入完成
+    function waitForGapiLoaded(callback) {
+        if (window.gapiLoaded && window.gapi) {
+            callback();
+        } else {
+            setTimeout(() => waitForGapiLoaded(callback), 50);
+        }
+    }
+    </script>
+    <script src="https://apis.google.com/js/api.js" onload="onGapiLoaded()"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; }
@@ -223,7 +238,6 @@ async function checkAndInitGoogleAPI() {
 /* 格式化檔案名稱 */
 function formatFileName(prompt) {
     let date = new Date();
-    // yyyyMMdd_HHmm
     let dateStr = date.getFullYear().toString() +
         ('0'+(date.getMonth()+1)).slice(-2) +
         ('0'+date.getDate()).slice(-2) + "_" +
@@ -236,7 +250,6 @@ function formatFileName(prompt) {
 
 /* Google Drive 資料夾管理 */
 async function getOrCreateFolderId() {
-    // 支援自訂資料夾名稱
     const folderName = customFolderName || "MarketIntel_Reports";
     let res = await gapi.client.drive.files.list({
         q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
@@ -349,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
         customFolderName = document.getElementById('custom-folder-name').value.trim() || "MarketIntel_Reports";
         customFileNamePattern = document.getElementById('custom-file-name').value.trim() || "{prompt}_{date}";
         googleInited = false; // 強制重新初始化 gapi.client
-        await checkAndInitGoogleAPI();
+        waitForGapiLoaded(checkAndInitGoogleAPI);
     };
     document.getElementById('clear-settings').onclick = function() {
         clearApiKeys();
@@ -357,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Google 登入初始化（只做 Auth）
-    initGoogleAuth();
+    waitForGapiLoaded(initGoogleAuth);
 
     document.getElementById('run-analysis').onclick = async function() {
         const prompt = document.getElementById('analysis-prompt').value;
@@ -392,7 +405,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!lastAIResult) { showAlert("請先執行分析！"); return; }
         showLoading("儲存至 Google Drive...");
         try {
-            await saveReportToDrive(lastAIResult, prompt);
+            waitForGapiLoaded(async () => {
+                await saveReportToDrive(lastAIResult, prompt);
+            });
         } catch(e) {
             showAlert("儲存失敗: " + e.message);
         }
