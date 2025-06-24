@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>市場情資與競品分析平台 (V4 - Custom Input)</title>
+    <title>市場情資與競品分析平台 (V5 - 完整維度版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -113,7 +113,7 @@
                     </div>
                     <div id="step-2" class="step">
                         <div class="step-circle" onclick="goToStep(2)">2</div>
-                        <div class="step-title">對手篩選</div>
+                        <div class="step-title">對手篩選與補充</div>
                         <div class="step-line"></div>
                     </div>
                     <div id="step-3" class="step">
@@ -128,53 +128,62 @@
                     <div id="step-1-content" class="step-panel active">
                         <section class="bg-techpanel rounded-xl shadow-2xl border border-techprimary/20 p-8 max-w-3xl mx-auto">
                             <h2 class="text-2xl font-bold mb-6 text-techaccent text-center">設定分析目標</h2>
-                            <div class="space-y-6">
-                                <!-- Analysis Criteria -->
-                                <div class="space-y-4">
-                                    <div>
-                                        <label for="topic" class="block text-sm font-medium text-gray-300">分析主題</label>
-                                        <input type="text" id="topic" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20 focus:outline-none focus:ring-2 focus:ring-techprimary text-gray-100" placeholder="如: 行動電源">
-                                    </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label for="product" class="block text-sm font-medium text-gray-300">產品名稱</label><input type="text" id="product" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="如: 行動電源"></div>
-                                        <div><label for="industry" class="block text-sm font-medium text-gray-300">產業名稱</label><input type="text" id="industry" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="如: 消費性電子"></div>
-                                    </div>
-                                </div>
-
-                                <div class="border-t border-techprimary/30 my-4"></div>
-
-                                <!-- Competitor Source Selection -->
+                            <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">競爭對手來源</label>
-                                    <div class="flex gap-4">
-                                        <label class="flex-1 p-3 bg-techbg rounded-lg text-center border-2 border-transparent has-[:checked]:border-techaccent cursor-pointer">
-                                            <input type="radio" name="competitor-source" value="ai" checked class="sr-only">AI 自動產生
-                                        </label>
-                                        <label class="flex-1 p-3 bg-techbg rounded-lg text-center border-2 border-transparent has-[:checked]:border-techaccent cursor-pointer">
-                                            <input type="radio" name="competitor-source" value="manual" class="sr-only">手動輸入
-                                        </label>
+                                    <label for="topic" class="block text-sm font-medium text-gray-300">分析主題</label>
+                                    <input type="text" id="topic" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20 focus:outline-none focus:ring-2 focus:ring-techprimary text-gray-100" placeholder="如: 行動電源">
+                                </div>
+                                 <div>
+                                    <label class="block text-sm font-medium text-gray-300">商業模式</label>
+                                    <div class="mt-2 grid grid-cols-3 gap-4 text-gray-300">
+                                        <label class="p-3 bg-techbg rounded-lg text-center border-2 border-transparent has-[:checked]:border-techaccent cursor-pointer"><input type="radio" name="business-model" value="B2C" checked class="sr-only">B2C</label>
+                                        <label class="p-3 bg-techbg rounded-lg text-center border-2 border-transparent has-[:checked]:border-techaccent cursor-pointer"><input type="radio" name="business-model" value="B2B" class="sr-only">B2B</label>
+                                        <label class="p-3 bg-techbg rounded-lg text-center border-2 border-transparent has-[:checked]:border-techaccent cursor-pointer"><input type="radio" name="business-model" value="B2B2C" class="sr-only">B2B2C</label>
                                     </div>
                                 </div>
-                                <div id="manual-competitor-input-container" class="hidden">
-                                    <label for="manual-competitors" class="block text-sm font-medium text-gray-300">手動輸入競爭對手列表</label>
-                                    <textarea id="manual-competitors" rows="4" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="請輸入公司或品牌名稱，每行一個或用逗號分隔"></textarea>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="country" class="block text-sm font-medium text-gray-300">國家/地區</label>
+                                        <select id="country" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20 focus:outline-none focus:ring-2 focus:ring-techprimary text-gray-100"><option value="TW">台灣</option><option value="CN">中國</option><option value="HK">香港</option><option value="JP">日本</option><option value="KR">韓國</option><option value="US">美國</option><option value="SG">新加坡</option><option value="DE">德國</option><option value="GB">英國</option><option value="FR">法國</option></select>
+                                    </div>
+                                    <div>
+                                        <label for="language" class="block text-sm font-medium text-gray-300">語言</label>
+                                        <select id="language" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20 focus:outline-none focus:ring-2 focus:ring-techprimary text-gray-100"><option value="zh-TW">繁體中文</option><option value="zh-CN">簡體中文</option><option value="en">英文</option><option value="ja">日文</option><option value="ko">韓文</option><option value="de">德文</option><option value="fr">法文</option></select>
+                                    </div>
                                 </div>
-                                <button id="start-analysis-btn" class="w-full bg-gradient-to-tr from-techprimary to-techaccent hover:from-techsecondary hover:to-techaccent font-bold text-white px-5 py-3 rounded-lg shadow-lg mt-6">開始分析</button>
+                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="industry" class="block text-sm font-medium text-gray-300">產業名稱</label><input type="text" id="industry" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="如: 消費性電子"></div>
+                                    <div><label for="sector" class="block text-sm font-medium text-gray-300">行業名稱</label><input type="text" id="sector" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="如: 通訊設備"></div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="product" class="block text-sm font-medium text-gray-300">產品名稱</label><input type="text" id="product" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="如: 行動電源"></div>
+                                    <div><label for="company" class="block text-sm font-medium text-gray-300">公司名稱 (可選)</label><input type="text" id="company" class="mt-1 w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="如: 小米"></div>
+                                </div>
+                                <button id="start-analysis-btn" class="w-full bg-gradient-to-tr from-techprimary to-techaccent hover:from-techsecondary hover:to-techaccent font-bold text-white px-5 py-3 rounded-lg shadow-lg mt-6">產生建議列表</button>
                             </div>
                         </section>
                     </div>
 
-                    <!-- Step 2: Competitor Selection -->
+                    <!-- Step 2: Competitor Selection & Supplement -->
                     <div id="step-2-content" class="step-panel hidden">
                         <section class="bg-techpanel rounded-xl shadow-2xl border border-techprimary/20 p-8 max-w-4xl mx-auto">
-                            <h2 class="text-2xl font-bold mb-6 text-techaccent text-center">篩選要深入分析的競爭對手</h2>
+                            <h2 class="text-2xl font-bold mb-2 text-techaccent text-center">篩選與補充競爭對手</h2>
+                            <p class="text-center text-gray-400 mb-6">請勾選 AI 建議的對手，並可手動補充額外名單。</p>
+                            
+                            <h3 class="font-semibold text-lg text-techaccent mb-3">AI 建議列表</h3>
                             <div id="competitor-checkbox-list" class="mb-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
-                            <div class="flex justify-between items-center mt-6">
+                            
+                            <div class="mt-6 border-t border-techprimary/30 pt-6">
+                                <label for="supplemental-competitors" class="font-semibold text-lg text-techaccent mb-3 block">補充自定義對手 (非必要)</label>
+                                <textarea id="supplemental-competitors" rows="3" class="w-full px-4 py-2 rounded-lg bg-techbg border border-techprimary/20" placeholder="請輸入額外的公司或品牌名稱，每行一個或用逗號分隔"></textarea>
+                            </div>
+
+                            <div class="flex justify-between items-center mt-8">
                                 <label class="inline-flex items-center">
                                     <input type="checkbox" id="select-all-competitors" class="mr-2 accent-techaccent scale-125">
-                                    <span class="font-semibold">全選/全不選</span>
+                                    <span class="font-semibold">全選/全不選 (AI 列表)</span>
                                 </label>
-                                <button id="analyze-selected-btn" class="bg-gradient-to-tr from-techprimary to-techaccent hover:from-techsecondary hover:to-techaccent font-bold text-white px-8 py-3 rounded-lg shadow-lg">分析選定對手</button>
+                                <button id="analyze-selected-btn" class="bg-gradient-to-tr from-techprimary to-techaccent hover:from-techsecondary hover:to-techaccent font-bold text-white px-8 py-3 rounded-lg shadow-lg">整合並分析最終列表</button>
                             </div>
                         </section>
                     </div>
@@ -268,7 +277,6 @@ const ui = {
     resultsContainer: document.getElementById('results-container'),
     saveAnalysisBtn: document.getElementById('save-analysis-btn'),
     exportExcelBtn: document.getElementById('export-excel-btn'),
-    manualCompetitorInputContainer: document.getElementById('manual-competitor-input-container'),
 };
 
 // --- INITIALIZATION ---
@@ -307,16 +315,11 @@ function setupEventListeners() {
     ui.signOutButton.onclick = handleSignOut;
     ui.saveSettingsBtn.onclick = handleSaveSettings;
     ui.startAnalysisBtn.onclick = startInitialAnalysis;
-    ui.analyzeSelectedBtn.onclick = () => analyzeCompetitors(getSelectedCompetitors());
+    ui.analyzeSelectedBtn.onclick = processAndAnalyzeCompetitors;
     ui.selectAllCompetitors.onchange = (e) => {
         document.querySelectorAll('.competitor-checkbox').forEach(cb => cb.checked = e.target.checked);
     };
     document.querySelectorAll('.tab-main').forEach(btn => btn.addEventListener('click', handleMainTabSwitch));
-    document.querySelectorAll('input[name="competitor-source"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            ui.manualCompetitorInputContainer.classList.toggle('hidden', e.target.value !== 'manual');
-        });
-    });
     ui.saveAnalysisBtn.onclick = saveAnalysisToDrive;
     ui.exportExcelBtn.onclick = exportToExcel;
 }
@@ -472,13 +475,14 @@ function validateInputFields() {
 function getSearchContext() {
     return {
         topic: document.getElementById('topic')?.value.trim(),
-        product: document.getElementById('product')?.value.trim(),
-        industry: document.getElementById('industry')?.value.trim()
+        businessModel: document.querySelector('input[name="business-model"]:checked').value,
+        country: document.getElementById('country').value,
+        language: document.getElementById('language').value,
+        industry: document.getElementById('industry').value.trim(),
+        sector: document.getElementById('sector').value.trim(),
+        product: document.getElementById('product').value.trim(),
+        company: document.getElementById('company').value.trim(),
     };
-}
-
-function getSelectedCompetitors() {
-    return Array.from(document.querySelectorAll('.competitor-checkbox:checked')).map(cb => cb.value);
 }
 
 async function startInitialAnalysis() {
@@ -486,55 +490,48 @@ async function startInitialAnalysis() {
     
     state.analysisData = { context: getSearchContext(), initialCompetitors: [], keywords: [], finalCompetitors: [] };
     
-    const competitorSource = document.querySelector('input[name="competitor-source"]:checked').value;
-
-    setLoadingState(true, '正在產生初步資料...');
+    setLoadingState(true, '正在產生 AI 建議列表...');
     
     try {
-        const keywordsPromise = getAiKeywordSuggestions(state.analysisData.context);
-        
-        if (competitorSource === 'ai') {
-            const [keywords, competitorNames] = await Promise.all([
-                keywordsPromise,
-                getAiCompetitorNames(state.analysisData.context)
-            ]);
-            state.analysisData.keywords = keywords || [];
-            state.analysisData.initialCompetitors = competitorNames || [];
+        const [keywords, competitorNames] = await Promise.all([
+            getAiKeywordSuggestions(state.analysisData.context),
+            getAiCompetitorNames(state.analysisData.context)
+        ]);
 
-            if (competitorNames.length === 0) {
-                showAlert('查無競爭對手', 'AI 未能找到相關對手，請嘗試調整條件或手動輸入。', 'info');
-                renderFullReport(); 
-                advanceStep(3);
-            } else {
-                renderCompetitorSelection(competitorNames);
-                advanceStep(2);
-            }
-        } else { // Manual input
-            const manualInput = document.getElementById('manual-competitors').value;
-            const competitorNames = manualInput.split(/[\n,]/).map(name => name.trim()).filter(Boolean);
-            if(competitorNames.length === 0) {
-                 showAlert('輸入錯誤', '請在手動輸入框中填寫競爭對手名稱。', 'warning');
-                 setLoadingState(false);
-                 return;
-            }
-            state.analysisData.keywords = await keywordsPromise;
-            analyzeCompetitors(competitorNames); // Skip step 2
+        state.analysisData.keywords = keywords || [];
+        state.analysisData.initialCompetitors = competitorNames || [];
+
+        if (competitorNames.length === 0) {
+            showAlert('查無競爭對手', 'AI 未能找到相關對手，請直接進入報告頁面查看關鍵字。', 'info');
+            renderFullReport(); 
+            advanceStep(3);
+        } else {
+            renderCompetitorSelection(competitorNames);
+            advanceStep(2);
         }
     } catch (error) {
         showAlert('分析失敗', `步驟一失敗: ${error.message}`, 'error');
     } finally {
-        if(document.querySelector('input[name="competitor-source"]:checked').value === 'ai') {
-            setLoadingState(false);
-        }
+        setLoadingState(false);
     }
 }
 
-async function analyzeCompetitors(competitorNames) {
-    if (competitorNames.length === 0) {
-        showAlert("未選擇", "請選擇或輸入至少一個競爭對手進行分析。", "warning");
+function processAndAnalyzeCompetitors() {
+    const selectedAINames = Array.from(document.querySelectorAll('.competitor-checkbox:checked')).map(cb => cb.value);
+    const supplementalInput = document.getElementById('supplemental-competitors').value;
+    const supplementalNames = supplementalInput.split(/[\n,]/).map(name => name.trim()).filter(Boolean);
+    const finalCompetitorList = [...new Set([...selectedAINames, ...supplementalNames])];
+    
+    if (finalCompetitorList.length === 0) {
+        showAlert("未指定對手", "請至少勾選或補充一個競爭對手進行分析。", "warning");
         return;
     }
 
+    analyzeCompetitors(finalCompetitorList);
+}
+
+
+async function analyzeCompetitors(competitorNames) {
     advanceStep(3);
     setLoadingState(true, `正在分析 ${competitorNames.length} 個競爭對手...`);
 
@@ -595,17 +592,17 @@ async function searchGoogle(query) {
 }
 
 async function getAiKeywordSuggestions(context) {
-    const prompt = `You are a world-class SEO expert. Based on {topic: "${context.topic}", product: "${context.product}", industry: "${context.industry}"}, generate 20 relevant SEO keywords. Provide estimated search volume (高/中/低) and bidding competition (高/中/低). Output MUST be a valid JSON array of objects, with NO other text. Format: [{"keyword": "...", "volume": "...", "type": "...", "biddingCompetition": "..."}, ...].`;
+    const prompt = `You are a world-class SEO expert. Based on the following criteria, generate 20 relevant SEO keywords in the specified language. Critically, tailor keywords to the "businessModel". Also provide estimated search volume (高/中/低), type, and bidding competition (高/中/低). Output MUST be a valid JSON array of objects, with NO other text. Criteria: ${JSON.stringify(context)}. Format: [{"keyword": "...", "volume": "...", "type": "...", "biddingCompetition": "..."}, ...].`;
     return callGemini(prompt);
 }
 
 async function getAiCompetitorNames(context) {
-    const prompt = `You are a market analysis expert. Based on {topic: "${context.topic}", product: "${context.product}", industry: "${context.industry}"}, identify the top 10 competitors. Output MUST be a valid JSON array of strings, with NO other text. Format: ["Competitor A", "Competitor B", ...].`;
+    const prompt = `You are a market analysis expert. Based on the criteria below, identify the top 10 competitors. Output MUST be a valid JSON array of strings, with NO other text. Criteria: ${JSON.stringify(context)}. Format: ["Competitor A", "Competitor B", ...].`;
     return callGemini(prompt);
 }
 
 async function getFullCompetitorDetails(name, context) {
-    const prompt = `Analyze the company "${name}", a competitor in the market of "${context.topic}". Find its official stock ticker, headquarters state/province, and postal code. Output MUST be a single valid JSON object. If a value isn't found, use null. Format: {"brandName": "${name}", "country": "...", "summary": "...", "companyType": "...", "stockTicker": "e.g., AAPL", "state": "e.g., California", "postalCode": "e.g., 95014"}`;
+    const prompt = `Analyze the company "${name}", a competitor in the market of "${context.topic}". Find its official stock ticker, headquarters state/province, and postal code. Output MUST be a single valid JSON object. If a value isn't found, use null. Criteria: ${JSON.stringify(context)}. Format: {"brandName": "${name}", "country": "...", "summary": "...", "companyType": "...", "stockTicker": "e.g., AAPL", "state": "e.g., California", "postalCode": "e.g., 95014"}`;
     const detailPromise = callGemini(prompt);
     const websitePromise = searchGoogle(`${name} ${context.industry || ''} official website`);
     const linkedinPromise = searchGoogle(`site:linkedin.com/company/ ${name}`);
@@ -622,6 +619,7 @@ function renderCompetitorSelection(competitorNames) {
             <span>${name}</span>
         </label>
     `).join('');
+    document.getElementById('supplemental-competitors').value = '';
 }
 
 function renderFullReport() {
