@@ -592,7 +592,7 @@ async function searchGoogle(query) {
 }
 
 async function getAiKeywordSuggestions(context) {
-    const prompt = `You are a world-class SEO expert. Based on the following criteria, generate 20 relevant SEO keywords in the specified language. Critically, tailor keywords to the "businessModel". Also provide estimated search volume (高/中/低), type, and bidding competition (高/中/低). Output MUST be a valid JSON array of objects, with NO other text. Criteria: ${JSON.stringify(context)}. Format: [{"keyword": "...", "volume": "...", "type": "...", "biddingCompetition": "..."}, ...].`;
+    const prompt = `You are a world-class SEO expert. Based on the following criteria, generate as many relevant SEO keywords as possible, aiming for 40-50, in the specified language. Critically, tailor keywords to the "businessModel". Also provide estimated search volume (高/中/低), type, and bidding competition (高/中/低). Output MUST be a valid JSON array of objects, with NO other text. Criteria: ${JSON.stringify(context)}. Format: [{"keyword": "...", "volume": "...", "type": "...", "biddingCompetition": "..."}, ...].`;
     return callGemini(prompt);
 }
 
